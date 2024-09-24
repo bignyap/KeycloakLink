@@ -2,6 +2,9 @@
 
 BeginPackage["KeycloakLink`"]
 
-Get["KeycloakLink`Utilities`"];
+Get["KeycloakLink`Utils`"]
+Get["KeycloakLink`JWT`"]
+Get["KeycloakLink`Keycloak`"]
+Get["KeycloakLink`Services`"]
 
 EndPackage[]

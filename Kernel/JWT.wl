@@ -1,16 +1,14 @@
-BeginPackage["KeycloakLink`Utilities`"]
+BeginPackage["KeycloakLink`JWT`"]
 
 
 ParseJWTToken
-
-
-FailObject
 
 
 Begin["`Private`"]
 
 
 Needs["KeycloakLink`"]
+Needs["WTC`Utilities`"]
 
 
 $ErrorMessage["ParseJWTToken"]["InvalidToken"]:=
@@ -80,34 +78,6 @@ iBase64URLEncode[str_String]:= StringTrim[StringReplace[str, {"+" -> "-", "/" ->
 
 
 iGenerateCodeChallenge[codeVerifier_String]:= iBase64URLEncode[Hash[codeVerifier, "SHA256", "Base64Encoding"]]
-
-
-Options[FailObject] = {
-    "StatusCode" -> 400, 
-    "ConvertToJSON" -> True,
-    "Exposed" -> True
-}
-
-FailObject[
-	msgName_String, msgTmp_String, 
-	tempIn_Association, opts:OptionsPattern[]
-]:= FailObject[msgName, TemplateApply[msgTmp, tempIn], opts]
-
-FailObject[
-	msgName_String, msg_String, 
-	OptionsPattern[]
-]:= Failure[
-	msgName, <|
-		"MessageTemplate" -> msg, 
-		"TimeStamp" -> DateString[], 
-		"StatusCode" -> OptionValue["StatusCode"],
-		"ConvertToJSON" -> OptionValue["ConvertToJSON"]
-	|>
-]
-
-FailObject[msgTag_String]:= FailObject[msgTag, msgTag]
-
-FailObject[]:= FailObject["Failure", "Failure!!"]
 
 
 End[]
