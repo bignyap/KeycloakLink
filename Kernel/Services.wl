@@ -1,12 +1,6 @@
 BeginPackage["KeycloakLink`Services`"]
 
 
-$KeycloakServices
-
-
-$KeycloakBaseURL
-
-
 Begin["`Private`"]
 
 

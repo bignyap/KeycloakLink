@@ -1,8 +1,4 @@
 (* ::Package:: *)
-
-GetUserInfo
-
-
 BeginPackage["KeycloakLink`UserInfo`"]
 
 

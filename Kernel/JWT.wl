@@ -1,9 +1,6 @@
 BeginPackage["KeycloakLink`JWT`"]
 
 
-ParseJWTToken
-
-
 Begin["`Private`"]
 
 

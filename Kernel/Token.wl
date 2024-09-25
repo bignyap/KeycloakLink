@@ -1,6 +1,3 @@
-GetAccessTokenFromKeycloak
-
-
 BeginPackage["KeycloakLink`Token`"]
 
 

@@ -1,84 +1,7 @@
 (* ::Package:: *)
 
-CreateRealm
-
-
-UpdateRealm
-
-
-ListRealm
-
-
-DeleteRealm
-
-
-CreateClient
-
-
-DeleteClient
-
-
-GetClientScope
-
-
-UpdateClientScope
-
-
-UpdateClientScopeProtocol
-
-
-CreateRealmRole
-
-
-CreateGroup
-
-
-ListGroup
-
-
-ListRealmRole
-
-
-ListClient
-
-
-ListRealmUsers
-
-
-GetServiceAccountUser
-
-
-UpdateGroupRole
-
-
-UpdateClientRole
-
-
-CreateKeycloakUser
-
-
-ListKeycloakUser
-
-
-ResetPassword
-
-
-UpdateGroupClientRole
-
-
-UpdateGroupRoleForManagement
-
-
-AvailableClientRoles
-
-
-AvailableRealmManagementRoles
-
-
-IntrospectAccessToken
-
-
-GetClientSecrets
+(* ::Subsubsection:: *)
+(*Begin*)
 
 
 BeginPackage["KeycloakLink`Keycloak`"]
@@ -92,8 +15,11 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Create Realm*)
+
+
+CreateRealm::usage = ""
 
 
 CreateRealm[realmDetails_Association, token_String, tokenType_String:"Bearer"]:= Catch@Module[{
@@ -118,8 +44,9 @@ CreateRealm[realmDetails_Association, token_String, tokenType_String:"Bearer"]:=
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Update Realm*)
+
 
 UpdateRealm[
 	realm_String, token_String, tokenType_String:"Bearer"
@@ -153,7 +80,7 @@ UpdateRealm[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*List Realm*)
 
 
@@ -211,7 +138,7 @@ DeleteRealm[realm_String, token_String, tokenType_String:"Bearer"]:= Catch@Modul
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Create Client*)
 
 
@@ -259,7 +186,7 @@ CreateClient[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Delete Client*)
 
 
@@ -287,7 +214,7 @@ DeleteClient[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Get Client Scope*)
 
 
@@ -315,7 +242,7 @@ GetClientScope[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Update Client Scope*)
 
 
@@ -345,7 +272,7 @@ UpdateClientScope[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Update Scope Protocol*)
 
 
@@ -375,7 +302,7 @@ UpdateClientScopeProtocol[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Create Realm Role*)
 
 
@@ -423,7 +350,7 @@ CreateRealmRole[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Create Group*)
 
 
@@ -471,7 +398,7 @@ CreateGroup[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*List Group*)
 
 
@@ -499,7 +426,7 @@ ListGroup[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*List Realm Role*)
 
 
@@ -527,7 +454,7 @@ ListRealmRole[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*List Realm Users*)
 
 
@@ -555,7 +482,7 @@ ListRealmUsers[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*List Client*)
 
 
@@ -583,7 +510,7 @@ ListClient[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Get Service Account User*)
 
 
@@ -655,7 +582,7 @@ iGetServiceAccountUser[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Update Group Role*)
 
 
@@ -698,7 +625,7 @@ UpdateGroupRole[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Update Realm Management Role*)
 
 
@@ -754,7 +681,7 @@ UpdateGroupClientRole[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Update Client Role*)
 
 
@@ -797,7 +724,7 @@ UpdateClientRole[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Create KeyCloak User*)
 
 
@@ -836,7 +763,7 @@ CreateKeycloakUser[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Create KeyCloak User*)
 
 
@@ -889,7 +816,7 @@ ResetPassword[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*ListKeycloakUser*)
 
 
@@ -965,7 +892,7 @@ ListKeycloakUser[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*List Client Roles*)
 
 
@@ -1048,7 +975,7 @@ AvailableRealmManagementRoles[
 ]:= AvailableClientRoles[realm, id, type, token, tokenType, "search" -> "realm-management"]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Introspect Token*)
 
 
@@ -1080,7 +1007,7 @@ IntrospectAccessToken[accessToken_String]:= Catch@Module[{
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Get Client Secret*)
 
 
@@ -1099,7 +1026,7 @@ GetClientSecrets[realm_String, token_String, tokenType_String]:= Catch[
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*End*)
 
 
