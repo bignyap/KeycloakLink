@@ -1,3 +1,9 @@
+(* ::Package:: *)
+
+(* ::Subsubsection:: *)
+(*Begin*)
+
+
 BeginPackage["KeycloakLink`Token`"]
 
 
@@ -9,99 +15,148 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
-$ErrorMessage["GetAccessToken"]["GrantTypeNotSupported"]:=
-    FailObject["GrantTypeNotSupported", "Grant type not supported", "StatusCode" -> 403]
-$ErrorMessage["GetAccessToken"]["WrongInput"]:=
+(* ::Subsubsection:: *)
+(*Get JWT From Keycloak*)
+
+
+$ErrorMessage["GetJWTFromKeycloak"]["RealmMissing"]:=
+	FailObject["RealmMissing", "Realm missing", "StatusCode" -> 400]
+	
+$ErrorMessage["GetJWTFromKeycloak"]["WrongURL"]:=
+	FailObject["RealmMissing", "Wrong URI", "StatusCode" -> 400]
+	
+$ErrorMessage["GetJWTFromKeycloak"]["AccessTokenNotFound", errorCode_Integer]:=
+    FailObject["AccessTokenNotFound", "Could not retrieve the access token", "StatusCode" -> errorCode]
+    
+$ErrorMessage["GetJWTFromKeycloak"]["GrantTypeNotSupported"]:=
+    FailObject["GrantTypeNotSupported", "Grant type not supported", "StatusCode" -> 400]
+    
+$ErrorMessage["GetJWTFromKeycloak"]["MissingAuthDetails", keys_List]:=
+	FailObject[
+		"MissingAuthDetails", 
+		StringJoin[
+			"Required parameters are missing", 
+			StringRiffle[keys, ", "]
+		], 
+		"StatusCode" -> 400
+	]
+	
+$ErrorMessage["GetJWTFromKeycloak"]["WrongAuthDetails", key_String]:= 
+	FailObject[
+		"WrongAuthDetails", 
+		StringJoin["Wrong input provided for key: ", key], 
+		"StatusCode" -> 400
+	]
+	
+$ErrorMessage["GetJWTFromKeycloak"]["WrongInput"]:=
     FailObject["WrongInput", "Could not retrieve the access token. Wrong inputs provided", "StatusCode" -> 404]
 
 
-Options[GetAccessTokenFromKeycloak] = {
-    "grant_type" :> $KeyCloakConfig["GrantType"], 
-    "auth_details" :> $KeyCloakConfig["AuthDetails"],
-    "use_default" -> False,
-    "realm" -> ""
+Options[GetJWTFromKeycloak] = {
+    "auth_url" -> None,
+    "grant_type" -> None, 
+    "auth_details" -> None,
+    "realm" -> None,
+    "scope" -> None
 }
 
 
-GetAccessTokenFromKeycloak[OptionsPattern[]]:= Catch@Block[{
-        accessToken, 
-        grantType, body, verifiedQ,
-        authDetils = OptionValue["auth_details"],
-        realm = OptionValue["realm"]
-    },
-    If[
-        StringQ[realm] && StringLength[realm] > 0,
-        $KeyCloakConfig["Realm"] = realm
-    ];
-    grantType = OptionValue["grant_type"];
-    If[
-        !OptionValue["use_default"],
-        verifiedQ = iVerifyAuthKeys[body["grant_type"], authDetils];
-		If[
-			!verifiedQ,
-			Throw[$ErrorMessage["GetAccessToken"]["WrongInput"]]
-		]
-    ];
-    body = iAuthenticationDetail[grantType, authDetils];
-    ThrowErrorWithCleanup[body];
-    body = Join[body,
-        {
-            "grant_type" -> grantType,
-            "scope" -> $KeyCloakConfig["Scope"]
-        }
-    ];
-    accessToken = CallKeycloakEndPoint[
-        "BaseURL" -> $KeyCloakConfig["AuthURL"],
-        "Path" -> $KeyCloakConfig["Path"]["Token"],
-        "Method" -> "POST", 
-        "Body" -> Normal@body,
-        "ContentType" -> "application/x-www-form-urlencoded",
-        "IncludeToken" -> False,
-        VerifySecurityCertificates -> False,
-        CookieFunction -> None
-    ];
-    ThrowErrorWithCleanup[accessToken];
-    accessToken = FormatHTTPResponse[
-        accessToken, "OutputFormat" -> "Association", 
-        "FailureMessage" -> $ErrorMessage["GetAccessToken"]["AccessTokenNotFound", accessToken["StatusCode"]]
-    ];
-    ThrowErrorWithCleanup[accessToken];
-    accessToken
+GetJWTFromKeycloak[OptionsPattern[]]:= Catch@Module[{
+		body = {},
+		authDetils = OptionValue["auth_details"],
+		realm = OptionValue["realm"],
+		authUri = OptionValue["auth_url"],
+		grantType = OptionValue["grant_type"],
+		scope = OptionValue["scope"]
+	},
+	If[
+		StringQ[realm] && StringLength[realm] > 0,
+		Throw[$ErrorMessage["GetJWTFromKeycloak"]["RealmMissing"]]
+	];
+	If[
+		StringQ[authUri] && StringLength[authUri] > 0,
+		Throw[$ErrorMessage["GetJWTFromKeycloak"]["WrongURL"]]
+	];
+	ThrowErrorWithCleanup[iVerifyAuthKeys[grantType, authDetils]];
+	body = Join[authDetils, <|"grant_type" -> grantType|>];
+	If[
+		StringQ[scope] && StringLength[scope] > 0,
+		body = Join[body, <|"scope" -> scope|>]
+	];
+	KeycloakExecute["Token", Normal@body]
 ]
 
 
-iAuthenticationDetail["password", authDetails_Association]:= {
-    "username" -> Lookup[authDetails, "username", $KeyCloakConfig["Username"]],
-    "password" -> Lookup[authDetails, "password", $KeyCloakConfig["Password"]],
-    "client_id" -> Lookup[authDetails, "client_id", $KeyCloakConfig["DefaultClientID"]],
-    "client_secret" -> Lookup[authDetails, "client_secret", ""]
-    (* Replace[Environment["ENVOY_OAUTH_CLIENT_SECRET"], $Failed -> ""] *)
-}
+kStringMatchQ = Function[
+	expr, {
+		Catch[
+			Map[
+				If[
+					TrueQ[#[expr]],
+					Throw[False]
+				]&, {
+					StringQ, 
+					Function[str, StringLength[str] > 0]
+				}
+			];
+			True
+		]
+	}
+] 
 
 
-iAuthenticationDetail["client_credentials", authDetails_Association]:= {
-    "client_id" -> Lookup[authDetails, "client_id", $KeyCloakConfig["ClientID"]],
-    "client_secret" -> Lookup[authDetails, "client_secret", $KeyCloakConfig["ClientSecret"]]
-}
+$requiredParameters = <|
+	"password" -> {
+		"username" -> kStringMatchQ,
+		"password" -> kStringMatchQ,
+		"client_id" -> kStringMatchQ,
+		"client_secret" -> kStringMatchQ
+	},
+	"client_credentials" -> {
+		"client_id" -> kStringMatchQ,
+		"client_secret" -> kStringMatchQ
+	},
+	"refresh_token" -> {
+		"client_id" -> kStringMatchQ,
+		"client_secret" -> kStringMatchQ,
+		"refresh_token" -> kStringMatchQ
+	}
+|>
 
 
-iAuthenticationDetail["refresh_token", authDetails_Association]:= {
-    "client_id" -> Lookup[authDetails, "client_id", $KeyCloakConfig["ClientID"]],
-    "client_secret" -> Lookup[authDetails, "client_secret", $KeyCloakConfig["ClientSecret"]],
-    "refresh_token" -> Lookup[authDetails, "refresh_token", ""]
-}
+iVerifyAuthKeys[
+	grantType:Alternatives@@Keys[$requiredParameters], 
+	authDetails_Association
+]:= Catch[
+	If[
+		Length[#] > 0,
+		Throw[$ErrorMessage["GetJWTFromKeycloak"]["MissingAuthDetails", #]]
+	]&[
+		Complement[
+			Keys[$requiredParameters[grantType]],
+			Keys[authDetails]
+		]
+	];
+	KeyValueMap[
+		If[
+			TrueQ[$requiredParameters[grantType][#1][#2]],
+			Throw[$ErrorMessage["GetJWTFromKeycloak"]["WrongAuthDetails", #1]]
+		]&, authDetails
+	];
+]
 
 
-iAuthenticationDetail[___]:= Throw[$ErrorMessage["GetAccessToken"]["GrantTypeNotSupported"]]
+iVerifyAuthKeys[___]:= $ErrorMessage["GetJWTFromKeycloak"]["GrantTypeNotSupported"]
 
 
-iVerifyAuthKeys[grantType_String, authDetails_Association]:= TrueQ@ContainsAll[Keys[authDetails], iAuthenticationDetail[grantType, <||>]]
+(* ::Subsubsection::Closed:: *)
+(*Verify JWT Token In Header*)
 
 
-GetAccessTokenFromHeader[]:= GetAccessTokenFromHeader[HTTPRequestData["Headers"]]
+VerifyJWTTokenInHeader[]:= VerifyJWTTokenInHeader[HTTPRequestData["Headers"]]
 
 
-GetAccessTokenFromHeader[header_]:= Catch@Module[{
+VerifyJWTTokenInHeader[header_]:= Catch@Module[{
 	  cookie, authorization, jwtToken,
       parsedToken
 	},

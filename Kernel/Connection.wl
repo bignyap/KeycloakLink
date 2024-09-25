@@ -6,13 +6,16 @@ BeginPackage["KeycloakLink`Connection`"]
 Begin["`Private`"]
 
 
-Options[OpenKeycloakConnection] = {
-    "HostURL" -> "https://localhost",
-    "Authentication" -> <||>
-}
+Options[OpenKeycloakConnection] = Join[
+    Options[],
+    {
+        "HostURL" -> "https://localhost:8443",
+        "Authentication" -> <||>
+    }
+]
 
 
-OpenKeycloakConnection[opts:OptionsPattern[]]:= Catch[
+OpenKeycloakConnection[OptionsPattern[]]:= Catch[
     Module[{
             uuid = CreateUUID[],
             keycloakObject,
@@ -20,8 +23,13 @@ OpenKeycloakConnection[opts:OptionsPattern[]]:= Catch[
             authentication = OptionValue["Authentication"]
         },
         keycloakObject = KeycloakObject[
-            "AuthURL" -> URLRead[]
-        ]
+            <|
+                "ID" -> uuid, 
+                "AuthURL" -> URLBuild[{baseUri, "auth"}], 
+                "Authentication" -> authentication
+            |>
+        ];
+
     ]
 ]
 
