@@ -3,9 +3,11 @@
 BeginPackage["KeycloakLink`"]
 
 
-(* KeycloakObject *)
+(* Object *)
 KeycloakObject
 KeycloakObjectQ
+RefreshKeycloakConnection
+KeycloakExecute
 
 (* Connection *)
 OpenKeycloakConnection

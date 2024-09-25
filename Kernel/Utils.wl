@@ -1,10 +1,14 @@
 BeginPackage["KeycloakLink`Utils`"]
 
 
+mFormatHTTPResponse
+
+
 Begin["`Private`"]
 
 
 Needs["KeycloakLink`"]
+Needs["KeycloakLink`Common`"]
 Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
@@ -13,6 +17,9 @@ mFormatHTTPResponse[temp_HTTPResponse]:= FormatHTTPResponse[
 	temp, "OutputFormat" -> "Association", 
 	"FailureMessage" -> iFailObject[temp]
 ]
+
+
+mFormatHTTPResponse[expr_]:= expr
 
 
 iFailObject[temp_HTTPResponse]:= FailObject[
@@ -94,9 +101,9 @@ $ErrorMessage["ParseJWTToken"]["InvalidSignature"]:=
 	FailObject["InvalidSignature", "Signature is not valid", "StatusCode" -> 403]
 
 Options[ParseJWTToken] = {
-	"CheckExpiration" :> $KeycloakConfig["CheckAccessTokenExpiration"],
+	"CheckExpiration" :> True,
 	"VerifySignature" :> False,
-	"Issuer" :> $KeycloakConfig["BaseURL"]
+	"Issuer" :> ""
 }
 
 

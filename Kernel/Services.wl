@@ -8,6 +8,8 @@ Needs["KeycloakLink`"]
 Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
+$KeycloakServices = <||>
+
 $KeycloakServices["Token"] = {
     "Path" -> {"token"},
     "Method" -> "POST",
@@ -24,11 +26,12 @@ $KeycloakServices["CreateRealm"] = {
 }
 
 $KeycloakServices["UpdateRealm"] = {
-    "Path" -> {"`realm`"},
+    "Path" -> {TemplateSlot["realm"]},
     "Method" -> "PUT",
     "ContentType" -> "application/json",
     VerifySecurityCertificates -> False,
-    "BodyTransormationFunction" -> (ToJSON[#, "Compact" -> True]&)
+    "BodyTransormationFunction" -> (ToJSON[#, "Compact" -> True]&),
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["ListRealm"] = {
@@ -39,153 +42,174 @@ $KeycloakServices["ListRealm"] = {
 }
 
 $KeycloakServices["DeleteRealm"] = {
-    "Path" -> {"`realm`"},
+    "Path" -> {TemplateSlot["realm"]},
     "Method" -> "DELETE",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["CreateClient"] = {
-    "Path" -> {"`realm`", "clients"},
+    "Path" -> {TemplateSlot["realm"], "clients"},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["DeleteClient"] = {
-    "Path" -> {"`realm`", "clients", "`clientID`"},
+    "Path" -> {TemplateSlot["realm"], "clients", TemplateSlot["clientID"]},
     "Method" -> "DELETE",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "clientID"}
 }
 
 $KeycloakServices["GetClientScope"] = {
-    "Path" -> {"`realm`", "client-scopes"},
+    "Path" -> {TemplateSlot["realm"], "client-scopes"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["UpdateClientScope"] = {
-    "Path" -> {"`realm`", "client-scopes", "`scopeID`"},
+    "Path" -> {TemplateSlot["realm"], "client-scopes", TemplateSlot["scopeID"]},
     "Method" -> "PUT",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "scopeID"}
 }
 
 $KeycloakServices["UpdateClientScopeProtocol"] = {
-    "Path" -> {"`realm`", "client-scopes", "`scopeID`", "protocol-mappers", "models", "`protocolId`"},
+    "Path" -> {TemplateSlot["realm"], "client-scopes", TemplateSlot["scopeID"], "protocol-mappers", "models", TemplateSlot["protocolId"]},
     "Method" -> "PUT",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "scopeID", "protocolId"}
 }
 
 $KeycloakServices["CreateRealmRole"] = {
-    "Path" -> {"`realm`", "roles"},
+    "Path" -> {TemplateSlot["realm"], "roles"},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["CreateGroup"] = {
-    "Path" -> {"`realm`", "groups"},
+    "Path" -> {TemplateSlot["realm"], "groups"},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["ListGroup"] = {
-    "Path" -> {"`realm`", "groups"},
+    "Path" -> {TemplateSlot["realm"], "groups"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["ListRealmRole"] = {
-    "Path" -> {"`realm`", "roles"},
+    "Path" -> {TemplateSlot["realm"], "roles"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["ListRealmUsers"] = {
-    "Path" -> {"`realm`", "users"},
+    "Path" -> {TemplateSlot["realm"], "users"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["ListClient"] = {
-    "Path" -> {"`realm`", "clients"},
+    "Path" -> {TemplateSlot["realm"], "clients"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["GetServiceAccountUser"] = {
-    "Path" -> {"`realm`", "clients", "`clientId`"},
+    "Path" -> {TemplateSlot["realm"], "clients", TemplateSlot["clientId"]},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "clientId"}
 }
 
 $KeycloakServices["UpdateGroupRole"] = {
-    "Path" -> {"`realm`", "groups", "`groupID`", "role-mappings", "realm"},
+    "Path" -> {TemplateSlot["realm"], "groups", TemplateSlot["groupID"], "role-mappings", "realm"},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "groupID"}
 }
 
 $KeycloakServices["UpdateGroupRoleForManagement"] = {
-    "Path" -> {"`realm`", "groups", "`groupID`", "role-mappings", "clients", "`clientID`"},
+    "Path" -> {TemplateSlot["realm"], "groups", TemplateSlot["groupID"], "role-mappings", "clients", TemplateSlot["clientID"]},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "groupID", "clientID"}
 }
 
 $KeycloakServices["UpdateClientRole"] = {
-    "Path" -> {"`realm`", "users", "`serviceUserID`", "role-mappings", "realm"},
+    "Path" -> {TemplateSlot["realm"], "users", TemplateSlot["serviceUserID"], "role-mappings", "realm"},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "serviceUserID"}
 }
 
 $KeycloakServices["CreateKeycloakUser"] = {
-    "Path" -> {"`realm`", "users"},
+    "Path" -> {TemplateSlot["realm"], "users"},
     "Method" -> "POST",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["ResetPassword"] = {
-    "Path" -> {"`realm`", "users", "`userId`", "reset-password"},
+    "Path" -> {TemplateSlot["realm"], "users", TemplateSlot["userId"], "reset-password"},
     "Method" -> "PUT",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm", "userId"}
 }
 
 $KeycloakServices["ListKeycloakUser"] = {
-    "Path" -> {"`realm`", "ui-ext", "brute-force-user"},
+    "Path" -> {TemplateSlot["realm"], "ui-ext", "brute-force-user"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
     VerifySecurityCertificates -> False,
-    "RemoveEmptyQueries" -> True
+    "RemoveEmptyQueries" -> True,
+    "DynamicPath" -> {"realm"}
 }
 
 $KeycloakServices["AvailableClientRoles"] = {
-    "Path" -> {"`realm`", "ui-ext", "available-roles", "`type`", "`id`"},
+    "Path" -> {TemplateSlot["realm"], "ui-ext", "available-roles", TemplateSlot["type"], TemplateSlot["id"]},
     "Method" -> "GET",
     "ContentType" -> "application/json",
     VerifySecurityCertificates -> False,
-    "RemoveEmptyQueries" -> True
+    "RemoveEmptyQueries" -> True,
+    "DynamicPath" -> {"realm", "type", "id"}
 }
 
 $KeycloakServices["AvailableRealmManagementRoles"] = {
-    "Path" -> {"`realm`", "ui-ext", "available-roles", "`type`", "`id`"},
+    "Path" -> {TemplateSlot["realm"], "ui-ext", "available-roles", TemplateSlot["type"], TemplateSlot["id"]},
     "Method" -> "GET",
     "ContentType" -> "application/json",
     VerifySecurityCertificates -> False,
-    "RemoveEmptyQueries" -> True
+    "RemoveEmptyQueries" -> True,
+    "DynamicPath" -> {"realm", "type", "id"}
 }
 
 $KeycloakServices["IntrospectAccessToken"] = {
@@ -197,10 +221,11 @@ $KeycloakServices["IntrospectAccessToken"] = {
 }
 
 $KeycloakServices["GetClientSecrets"] = {
-    "Path" -> {"`realm`", "clients"},
+    "Path" -> {TemplateSlot["realm"], "clients"},
     "Method" -> "GET",
     "ContentType" -> "application/json",
-    VerifySecurityCertificates -> False
+    VerifySecurityCertificates -> False,
+    "DynamicPath" -> {"realm"}
 }
 
 End[]

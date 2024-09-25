@@ -11,6 +11,7 @@ Begin["`Private`"]
 
 
 Needs["KeycloakLink`"]
+Needs["KeycloakLink`Common`"]
 Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
@@ -52,29 +53,32 @@ $ErrorMessage["GetJWTFromKeycloak"]["WrongInput"]:=
     FailObject["WrongInput", "Could not retrieve the access token. Wrong inputs provided", "StatusCode" -> 404]
 
 
-Options[GetJWTFromKeycloak] = {
-    "auth_url" -> None,
-    "grant_type" -> None, 
-    "auth_details" -> None,
-    "realm" -> None,
-    "scope" -> None
-}
+Options[GetJWTFromKeycloak] = Join[
+	Options[SendHTTPRequest],
+	{
+		"token_url" -> None,
+		"grant_type" -> None, 
+		"auth_details" -> None,
+		"realm" -> None,
+		"scope" -> None
+	}
+]
 
 
-GetJWTFromKeycloak[OptionsPattern[]]:= Catch@Module[{
+GetJWTFromKeycloak[opts:OptionsPattern[]]:= Catch@Module[{
 		body = {},
 		authDetils = OptionValue["auth_details"],
 		realm = OptionValue["realm"],
-		authUri = OptionValue["auth_url"],
+		tokenUri = OptionValue["token_url"],
 		grantType = OptionValue["grant_type"],
 		scope = OptionValue["scope"]
 	},
 	If[
-		StringQ[realm] && StringLength[realm] > 0,
+		kStringMatchQ[realm],
 		Throw[$ErrorMessage["GetJWTFromKeycloak"]["RealmMissing"]]
 	];
 	If[
-		StringQ[authUri] && StringLength[authUri] > 0,
+		kStringMatchQ[tokenUri],
 		Throw[$ErrorMessage["GetJWTFromKeycloak"]["WrongURL"]]
 	];
 	ThrowErrorWithCleanup[iVerifyAuthKeys[grantType, authDetils]];
@@ -84,11 +88,14 @@ GetJWTFromKeycloak[OptionsPattern[]]:= Catch@Module[{
 		body = Join[body, <|"scope" -> scope|>]
 	];
 	SendHTTPRequest[
+		"BaseURL" -> tokenUri,
+		"Path" -> {},
+		"Body" -> body,
+		TimeConstrained -> 5,
 	    FunctionOptions[
-	        $KeycloakServices["Token"], 
+	        Flatten[{$KeycloakServices["Token"], opts}], 
 	        SendHTTPRequest
-	    ],
-	    "Body" -> body
+	    ]
 	]
 ]
 

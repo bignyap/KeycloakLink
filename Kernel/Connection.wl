@@ -16,14 +16,17 @@ $ErrorMessage["OpenKeycloakConnection"]["HostUnreachable"]:=
 
 
 Options[OpenKeycloakConnection] = {
-    Authentication -> Automatic
+    Authentication -> Automatic,
+    "Name" :> CreateUUID[]
 }
 
 
-OpenKeycloakConnection[hostUri_String, realm_String]:= Catch[
+OpenKeycloakConnection[
+    hostUri_String, realm_String, 
+    OptionsPattern[]
+]:= Catch[
     Module[{
             keycloakInfo,
-            uuid = CreateUUID[],
             keycloakObject,
             authentication = OptionValue[Authentication]
         },
@@ -32,14 +35,20 @@ OpenKeycloakConnection[hostUri_String, realm_String]:= Catch[
             !AssociationQ[keycloakInfo],
             Throw[$ErrorMessage["OpenKeycloakConnection"]["HostUnreachable"]]
         ];
-        keycloakObject = KeycloakObject[
-            <|
-                "ID" -> uuid, 
-                "AuthURL" -> URLBuild[{hostUri, "auth"}], 
-                "Authentication" -> authentication,
-                "KeyclaokConfig" -> keycloakInfo
-            |>
+        keycloakObject = <|
+            "ID" -> OptionValue["Name"], 
+            "Host" -> hostUri,
+            "Issuer" -> keycloakInfo["issuer"], 
+            "Authentication" -> authentication,
+            "Information" -> <||>
+        |>;
+        If[
+            !KeyExistsQ[authentication, "realm"],
+            authentication["realm"] = realm
         ];
+        keycloakObject["Information"]["Authentication"] = authentication;
+        keycloakObject["Information"]["KeyclaokConfig"] = keycloakInfo;
+        keycloakObject = KeycloakObject[keycloakObject];
         ThrowErrorWithCleanup[
             RefreshKeycloakConnection[keycloakObject]
         ];
@@ -52,7 +61,7 @@ GetKeyclaokConfiguration[
     hostUrl_String, 
     realm_String
 ]:= SendHTTPRequest[
-    URLBuild[{
+    "BaseURL" -> URLBuild[{
         hostUrl, "auth", "realms", realm, 
         ".well-known", "openid-configuration"
     }],
