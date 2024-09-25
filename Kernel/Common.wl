@@ -5,19 +5,26 @@ BeginPackage["KeycloakLink`"]
 
 (* KeycloakObject *)
 KeycloakObject
-
-(* JWT *)
-ParseJWTToken
+KeycloakObjectQ
 
 (* Connection *)
 OpenKeycloakConnection
 $KeycloakConnections
+
+(* Services *)
+$KeycloakServices
 
 
 EndPackage[]
 
 
 BeginPackage["KeycloakLink`Common`"]
+
+
+GetJWTFromKeycloak
+
+
+ParseJWTToken
 
 
 EndPackage[]

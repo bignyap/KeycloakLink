@@ -5,9 +5,9 @@ BeginPackage["KeycloakLink`"]
 
 Get["KeycloakLink`Common`"]
 Get["KeycloakLink`Utils`"]
-Get["KeycloakLink`JWT`"]
-Get["KeycloakLink`KeycloakObject`"]
-Get["KeycloakLink`Keycloak`"]
-
+Get["KeycloakLink`Token`"]
+Get["KeycloakLink`Services`"]
+Get["KeycloakLink`Object`"]
+Get["KeycloakLink`Connection`"]
 
 EndPackage[]

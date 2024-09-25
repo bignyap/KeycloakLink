@@ -6,31 +6,57 @@ BeginPackage["KeycloakLink`Connection`"]
 Begin["`Private`"]
 
 
-Options[OpenKeycloakConnection] = Join[
-    Options[],
-    {
-        "HostURL" -> "https://localhost:8443",
-        "Authentication" -> <||>
-    }
-]
+Needs["KeycloakLink`"]
+Needs["WTC`Utilities`"]
+Needs["WTC`Utilities`Common`"]
 
 
-OpenKeycloakConnection[OptionsPattern[]]:= Catch[
+$ErrorMessage["OpenKeycloakConnection"]["HostUnreachable"]:=
+    FailObject["HostUnreachable", "Could not reach the host", "StatusCode" -> 400]
+
+
+Options[OpenKeycloakConnection] = {
+    Authentication -> Automatic
+}
+
+
+OpenKeycloakConnection[hostUri_String, realm_String]:= Catch[
     Module[{
+            keycloakInfo,
             uuid = CreateUUID[],
             keycloakObject,
-            baseUri = OptionValue["HostURL"],
-            authentication = OptionValue["Authentication"]
+            authentication = OptionValue[Authentication]
         },
+        keycloakInfo = GetKeyclaokConfiguration[hostUri, realm];
+        If[
+            !AssociationQ[keycloakInfo],
+            Throw[$ErrorMessage["OpenKeycloakConnection"]["HostUnreachable"]]
+        ];
         keycloakObject = KeycloakObject[
             <|
                 "ID" -> uuid, 
-                "AuthURL" -> URLBuild[{baseUri, "auth"}], 
-                "Authentication" -> authentication
+                "AuthURL" -> URLBuild[{hostUri, "auth"}], 
+                "Authentication" -> authentication,
+                "KeyclaokConfig" -> keycloakInfo
             |>
         ];
-
+        ThrowErrorWithCleanup[
+            RefreshKeycloakConnection[keycloakObject]
+        ];
+        keycloakObject
     ]
+]
+
+
+GetKeyclaokConfiguration[
+    hostUrl_String, 
+    realm_String
+]:= SendHTTPRequest[
+    URLBuild[{
+        hostUrl, "auth", "realms", realm, 
+        ".well-known", "openid-configuration"
+    }],
+    "OutputFormat" -> "Association"
 ]
 
 

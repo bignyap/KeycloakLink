@@ -1,13 +1,12 @@
+(* ::Package:: *)
+
 BeginPackage["KeycloakLink`Services`"]
 
-
 Begin["`Private`"]
-
 
 Needs["KeycloakLink`"]
 Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
-
 
 $KeycloakServices["Token"] = {
     "Path" -> {"token"},
@@ -17,104 +16,193 @@ $KeycloakServices["Token"] = {
     CookieFunction -> None
 }
 
+$KeycloakServices["CreateRealm"] = {
+    "Path" -> "",
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
-SetAttributes[RefreshKeycloakConnection, HoldFirst]
+$KeycloakServices["UpdateRealm"] = {
+    "Path" -> {"`realm`"},
+    "Method" -> "PUT",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False,
+    "BodyTransormationFunction" -> (ToJSON[#, "Compact" -> True]&)
+}
 
+$KeycloakServices["ListRealm"] = {
+    "Path" -> "",
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
-KeycloakObject/:RefreshKeycloakConnection[
-    KeycloakObject[keyCloakObject_?KeycloakObjectQ]
-]:= Catch@With[{
-        tokenDetails = KeycloakExecute[keyCloakObject, "Token", ]
-    },
-    ThrowErrorWithCleanup[tokenDetails];
-    keyCloakObject["TokenDetails"] = tokenDetails
-]
+$KeycloakServices["DeleteRealm"] = {
+    "Path" -> {"`realm`"},
+    "Method" -> "DELETE",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["CreateClient"] = {
+    "Path" -> {"`realm`", "clients"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
-KeycloakObject/:KeycloakExecute[ 
-    "Token", body_
-]:= SendHTTPRequest[
-    FunctionOptions[
-        $KeycloakServices["Token"], 
-        SendHTTPRequest
-    ],
-    "Body" -> body
-]
+$KeycloakServices["DeleteClient"] = {
+    "Path" -> {"`realm`", "clients", "`clientID`"},
+    "Method" -> "DELETE",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["GetClientScope"] = {
+    "Path" -> {"`realm`", "client-scopes"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
-KeycloakObject/:KeycloakExecute[
-    KeycloakObject[keyCloakObject_?KeycloakObjectQ], 
-    requestName_String, 
-    body_,
-    OptionsPattern[]
-]:= Catch@Module[{
-        tokenDetails = Lookup[
-            keyCloakObject["Information"],
-            "TokenDetails", <||>
-        ],
-        expiresAt, 
-        currentTime = UnixTime[] + 2,
-        authParams
-    },
-    expiresAt = Lookup[tokenDetails, "expires_at", 0];
-    If[
-        expiresAt <= currentTime,
-        ThrowErrorWithCleanup[
-            RefreshKeycloakConnection[keyCloakObject]
-        ]
-    ];
-    authParams = {
-        "Authorization" -> StringJoin[
-            tokenDetails["token_type"], " ",
-            tokenDetails["access_token"]
-        ]
-    };
-    SendHTTPRequest[
-        "Body" -> body,
-        Authentication -> <|"Headers" -> authParams|>,
-        FunctionOptions[
-            $KeycloakServices[requestName], 
-            SendHTTPRequest
-        ]
-    ]
-]
+$KeycloakServices["UpdateClientScope"] = {
+    "Path" -> {"`realm`", "client-scopes", "`scopeID`"},
+    "Method" -> "PUT",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["UpdateClientScopeProtocol"] = {
+    "Path" -> {"`realm`", "client-scopes", "`scopeID`", "protocol-mappers", "models", "`protocolId`"},
+    "Method" -> "PUT",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
-(* $KeycloakServices = <|
-    "CreateRealm" -> CreateRealm,
-    "UpdateRealm" -> UpdateRealm,
-    "ListRealm" -> ListRealm,
-    "DeleteRealm" -> DeleteRealm,
-    "CreateClient" -> CreateClient,
-    "DeleteClient" -> DeleteClient,
-    "GetClientScope" -> GetClientScope,
-    "UpdateClientScope" -> UpdateClientScope,
-    "UpdateClientScopeProtocol" -> UpdateClientScopeProtocol,
-    "CreateRealmRole" -> CreateRealmRole,
-    "CreateGroup" -> CreateGroup,
-    "ListGroup" -> ListGroup,
-    "ListRealmRole" -> ListRealmRole,
-    "ListClient" -> ListClient,
-    "ListRealmUsers" -> ListRealmUsers,
-    "GetServiceAccountUser" -> GetServiceAccountUser,
-    "UpdateGroupRole" -> UpdateGroupRole,
-    "UpdateClientRole" -> UpdateClientRole,
-    "CreateKeycloakUser" -> CreateKeycloakUser,
-    "ListKeycloakUser" -> ListKeycloakUser,
-    "ResetPassword" -> ResetPassword,
-    "UpdateGroupClientRole" -> UpdateGroupClientRole,
-    "UpdateGroupRoleForManagement" -> UpdateGroupRoleForManagement,
-    "AvailableClientRoles" -> AvailableClientRoles,
-    "AvailableRealmManagementRoles" -> AvailableRealmManagementRoles,
-    "IntrospectAccessToken" -> IntrospectAccessToken,
-    "GetClientSecrets" -> GetClientSecrets
-|>; *)
+$KeycloakServices["CreateRealmRole"] = {
+    "Path" -> {"`realm`", "roles"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["CreateGroup"] = {
+    "Path" -> {"`realm`", "groups"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["ListGroup"] = {
+    "Path" -> {"`realm`", "groups"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["ListRealmRole"] = {
+    "Path" -> {"`realm`", "roles"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
+$KeycloakServices["ListRealmUsers"] = {
+    "Path" -> {"`realm`", "users"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["ListClient"] = {
+    "Path" -> {"`realm`", "clients"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["GetServiceAccountUser"] = {
+    "Path" -> {"`realm`", "clients", "`clientId`"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["UpdateGroupRole"] = {
+    "Path" -> {"`realm`", "groups", "`groupID`", "role-mappings", "realm"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["UpdateGroupRoleForManagement"] = {
+    "Path" -> {"`realm`", "groups", "`groupID`", "role-mappings", "clients", "`clientID`"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["UpdateClientRole"] = {
+    "Path" -> {"`realm`", "users", "`serviceUserID`", "role-mappings", "realm"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["CreateKeycloakUser"] = {
+    "Path" -> {"`realm`", "users"},
+    "Method" -> "POST",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["ResetPassword"] = {
+    "Path" -> {"`realm`", "users", "`userId`", "reset-password"},
+    "Method" -> "PUT",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
+
+$KeycloakServices["ListKeycloakUser"] = {
+    "Path" -> {"`realm`", "ui-ext", "brute-force-user"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False,
+    "RemoveEmptyQueries" -> True
+}
+
+$KeycloakServices["AvailableClientRoles"] = {
+    "Path" -> {"`realm`", "ui-ext", "available-roles", "`type`", "`id`"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False,
+    "RemoveEmptyQueries" -> True
+}
+
+$KeycloakServices["AvailableRealmManagementRoles"] = {
+    "Path" -> {"`realm`", "ui-ext", "available-roles", "`type`", "`id`"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False,
+    "RemoveEmptyQueries" -> True
+}
+
+$KeycloakServices["IntrospectAccessToken"] = {
+    "Path" -> {"introspect"},
+    "Method" -> "POST",
+    "ContentType" -> "application/x-www-form-urlencoded",
+    VerifySecurityCertificates -> False,
+    CookieFunction -> None
+}
+
+$KeycloakServices["GetClientSecrets"] = {
+    "Path" -> {"`realm`", "clients"},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False
+}
 
 End[]
-
 
 EndPackage[]

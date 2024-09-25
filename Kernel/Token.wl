@@ -16,7 +16,7 @@ Needs["WTC`Utilities`Common`"]
 
 
 (* ::Subsubsection:: *)
-(*Get JWT From Keycloak*)
+(*Get JWT*)
 
 
 $ErrorMessage["GetJWTFromKeycloak"]["RealmMissing"]:=
@@ -83,7 +83,13 @@ GetJWTFromKeycloak[OptionsPattern[]]:= Catch@Module[{
 		StringQ[scope] && StringLength[scope] > 0,
 		body = Join[body, <|"scope" -> scope|>]
 	];
-	KeycloakExecute["Token", Normal@body]
+	SendHTTPRequest[
+	    FunctionOptions[
+	        $KeycloakServices["Token"], 
+	        SendHTTPRequest
+	    ],
+	    "Body" -> body
+	]
 ]
 
 
@@ -149,7 +155,7 @@ iVerifyAuthKeys[
 iVerifyAuthKeys[___]:= $ErrorMessage["GetJWTFromKeycloak"]["GrantTypeNotSupported"]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Verify JWT Token In Header*)
 
 

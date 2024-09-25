@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-BeginPackage["KeycloakLink`KeycloakObject`"]
+BeginPackage["KeycloakLink`Object`"]
 
 
 Begin["`Private`"]
@@ -11,7 +11,7 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
-KeycloakObject
+KeycloakObject::usage = ""
 
 
 KeycloakObject/:MakeBoxes[p:KeycloakObject[keycloakAssoc_?KeycloakObjectQ], fmt:(StandardForm|TraditionalForm)]:=
@@ -96,6 +96,87 @@ KeycloakObjectQ[keycloakAssoc_?AssociationQ]:= AllTrue[
 ]
 
 KeycloakObjectQ[___]:= False
+
+
+SetAttributes[RefreshKeycloakConnection, HoldFirst]
+
+KeycloakObject/:RefreshKeycloakConnection[
+    KeycloakObject[keycloakObject_]
+]:= Catch[
+    If[
+        KeycloakObjectQ[keycloakObject],
+        Throw[$Failed]
+    ];
+    Module[{
+            tokenDetails = KeycloakExecute[ keycloakObject, "Token" ]
+        },
+        ThrowErrorWithCleanup[tokenDetails];
+        keycloakObject["TokenDetails"] = tokenDetails
+    ];
+    KeycloakObject[keycloakObject]
+]
+
+
+$ErrorMessage["KeycloakExecute"]["RequestNotDefined"]:=
+    FailObject[
+        "RequestNotDefined", 
+        "Request type is not defined. You can add the service to $KeycloakServices and try to execute again", 
+        "StatusCode" -> 400
+    ]
+
+
+KeycloakObject/:KeycloakExecute[
+    KeycloakObject[keyCloakObject_?KeycloakObjectQ], 
+    "Token"
+]:= KeycloakLink`Common`GetJWTFromKeycloak[
+	"auth_url" -> keyCloakObject["AuthURL"],
+    "grant_type" -> keyCloakObject["Authentication"]["grant_type"], 
+    "auth_details" -> keyCloakObject["Authentication"]["auth_details"],
+    "realm" -> keyCloakObject["Authentication"]["realm"],
+    "scope" -> keyCloakObject["Authentication"]["scope"]
+]
+
+
+KeycloakObject/:KeycloakExecute[
+    KeycloakObject[keyCloakObject_?KeycloakObjectQ], 
+    requestName_String, 
+    body_,
+    OptionsPattern[]
+]:= Catch@Module[{
+        tokenDetails = Lookup[
+            keyCloakObject["Information"],
+            "TokenDetails", <||>
+        ],
+        expiresAt, 
+        currentTime = UnixTime[] + 2,
+        authParams
+    },
+    If[
+        KeyExistsQ[$KeycloakServices, requestName],
+        Throw[$ErrorMessage["KeycloakExecute"]["RequestNotDefined"]]
+    ];
+    expiresAt = Lookup[tokenDetails, "expires_at", 0];
+    If[
+        expiresAt <= currentTime,
+        ThrowErrorWithCleanup[
+            RefreshKeycloakConnection[keyCloakObject]
+        ]
+    ];
+    authParams = {
+        "Authorization" -> StringJoin[
+            tokenDetails["token_type"], " ",
+            tokenDetails["access_token"]
+        ]
+    };
+    SendHTTPRequest[
+        "Body" -> body,
+        Authentication -> <|"Headers" -> authParams|>,
+        FunctionOptions[
+            $KeycloakServices[requestName], 
+            SendHTTPRequest
+        ]
+    ]
+]
 
 
 End[]
