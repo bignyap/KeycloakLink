@@ -8,7 +8,7 @@ Paclet to connect to Keycloak APIs using Wolfram Language
 First, install and load the necessary paclets:
 
 ```wolfram
-PacletInstall["WTC\Utilities"]
+PacletInstall["WTC/Utilities"]
 PacletDirectoryLoad["<path/to/your/paclet/folder>"];
 Get["KeycloakLink`"];
 ```
