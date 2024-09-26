@@ -12,7 +12,9 @@ PacletObject[
 			},
 			{
 				"Resource", "Root" -> "Assets",
-				"Resources" -> {}
+				"Resources" -> {
+					{"Logo", "img/logo.png"}
+				}
 			}
 		}
 	|>

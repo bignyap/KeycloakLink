@@ -37,8 +37,11 @@ OpenKeycloakConnection[
         ];
         keycloakObject = <|
             "ID" -> OptionValue["Name"], 
-            "Host" -> hostUri,
+            "Realm" -> realm,
+            "Host" -> hostUri, 
             "Issuer" -> keycloakInfo["issuer"], 
+            "AuthURL" -> URLBuild[{hostUri, "auth"}],
+            "AdminURL" -> URLBuild[{hostUri, "auth", "admin", "realms"}],
             "Authentication" -> authentication,
             "Information" -> <||>
         |>;

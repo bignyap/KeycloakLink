@@ -35,7 +35,8 @@ KeycloakObject/:MakeBoxes[p:KeycloakObject[keycloakAssoc_?KeycloakObjectQ], fmt:
 				BoxForm`SummaryItem[{"Tokenndpoint ", keycloakAssoc["Information"]["KeyclaokConfig"]["token_endpoint"]}]
 			}
 		};
-		icon =  Graphics[
+		icon =  Import[KeycloakLink`Utils`KeycloakLinkAsset["Logo"]];
+        (* Graphics[
 			{
 				Green, Disk[], 
 				Text[Style["Keycloak", Bold, Gray], {0, 0}, Automatic, {2, 1}]
@@ -44,7 +45,7 @@ KeycloakObject/:MakeBoxes[p:KeycloakObject[keycloakAssoc_?KeycloakObjectQ], fmt:
 				Automatic, 
 				3.5 CurrentValue["FontCapHeight"]/AbsoluteCurrentValue[Magnification]
 			}]
-		]; 
+		];  *)
 		BoxForm`ArrangeSummaryBox[
 			KeycloakObject (* Head *), 
 			keycloakAssoc (* Actual Data *), 
@@ -80,7 +81,8 @@ KeycloakObject/:KeycloakObject[keycloakAssoc_?AssociationQ]["Properties"]:= $def
 KeycloakObject/:KeycloakObject[keycloakAssoc_?AssociationQ][
 	prop:Alternatives[
 		"ID", "Information", "Authentication",
-		"Issuer", "Timestamp", "AuthType", "Host"
+		"Issuer", "Timestamp", "AuthType", "Host",
+        "AuthURL", "AdminURL", "Realm"
 	]
 ]:= keycloakAssoc[prop]
 
@@ -154,57 +156,43 @@ $ErrorMessage["KeycloakExecute"]["AdditionalPathRequired", params_]:=
 
 Options[KeycloakExecute] = {
     "Body" -> None,
+    "Query" -> {},
     "DynamicPath" -> <||>
 }
 
 
 KeycloakExecute[
-    keyCloakObject_?KeycloakObjectQ, 
+    keycloakObject_?KeycloakObjectQ, 
     "Token"
 ]:= KeycloakLink`Utils`mFormatHTTPResponse[
     KeycloakLink`Common`GetJWTFromKeycloak[
-        "token_url" -> keyCloakObject["Information"]["KeyclaokConfig"]["token_endpoint"],
-        "grant_type" -> keyCloakObject["Authentication"]["grant_type"], 
-        "auth_details" -> keyCloakObject["Authentication"]["auth_details"],
-        "realm" -> keyCloakObject["Authentication"]["realm"],
-        "scope" -> keyCloakObject["Authentication"]["scope"],
+        "token_url" -> keycloakObject["Information"]["KeyclaokConfig"]["token_endpoint"],
+        "grant_type" -> keycloakObject["Authentication"]["grant_type"], 
+        "auth_details" -> keycloakObject["Authentication"]["auth_details"],
+        "realm" -> keycloakObject["Authentication"]["realm"],
+        "scope" -> keycloakObject["Authentication"]["scope"],
         "OutputFormat" -> "Association"
     ]
 ]
 
 
 KeycloakExecute[
-    keyCloakObject_?KeycloakObjectQ, 
+   keycloakObject_?KeycloakObjectQ, 
     requestName_String, 
     OptionsPattern[]
 ]:= Catch@Module[{
         tokenDetails = Lookup[
-            keyCloakObject["Information"],
+            keycloakObject["Information"],
             "TokenDetails", <||>
         ],
-        keycloakConfig = Lookup[
-            keyCloakObject["Information"], 
-            "KeyclaokConfig", <||>
-        ],
-        parsedToken = Lookup[
-            keyCloakObject["Information"], 
-            "ParsedToken", <||>
-        ], 
-        currentTime = UnixTime[] + 2,
-        expiresAt, authParams, finalUri,
         body = OptionValue["Body"],
-        dynamicPath = OptionValue["DynamicPath"]
+        query = OptionValue["Query"],
+        dynamicPath = OptionValue["DynamicPath"],
+        authParams, finalUri
     },
     If[
         !KeyExistsQ[$KeycloakServices, requestName],
         Throw[$ErrorMessage["KeycloakExecute"]["RequestNotDefined"]]
-    ];
-    expiresAt = Lookup[parsedToken["Payload"], "exp", 0];
-    If[
-        TrueQ[expiresAt <= currentTime],
-        ThrowErrorWithCleanup[
-            RefreshKeycloakConnection[keyCloakObject]
-        ]
     ];
     authParams = {
         "Authorization" -> StringJoin[
@@ -225,15 +213,15 @@ KeycloakExecute[
     ];
     finalUri = URLBuild[
         Flatten[{
-            keyCloakObject["Host"], "auth", "realms",
+            keycloakObject["AdminURL"],
             Lookup[$KeycloakServices[requestName], "Path", ""]
         }]
     ];
     If[
         Length[dynamicPath] > 0,
-        finalUri = Echo@TemplateApply[
-            Echo@finalUri,
-            Echo@dynamicPath
+        finalUri = TemplateApply[
+            finalUri,
+            dynamicPath
         ]
     ];
     KeycloakLink`Utils`mFormatHTTPResponse[
@@ -241,11 +229,50 @@ KeycloakExecute[
             "BaseURL" -> finalUri,
             "Path" -> {},
             "Body" -> body,
+            "Query" -> query,
             Authentication -> <|"Headers" -> authParams|>,
             FunctionOptions[
                 $KeycloakServices[requestName], 
                 SendHTTPRequest
             ]
+        ]
+    ]
+]
+
+
+SetAttributes[KeycloakExecuteWithRefresh, HoldFirst]
+
+
+Options[KeycloakExecuteWithRefresh] = Options[KeycloakExecute]
+
+
+KeycloakExecuteWithRefresh[
+    keycloakObject_, 
+    requestName_String, 
+    opts:OptionsPattern[]
+]:= Catch[
+    If[
+        !KeycloakObjectQ[keycloakObject],
+        Throw[$Failed]
+    ];
+    Module[{
+            parsedToken = Lookup[
+                keycloakObject["Information"], 
+                "ParsedToken", <||>
+            ], 
+            currentTime = UnixTime[] + 2,
+            expiresAt
+        },
+        expiresAt = Lookup[parsedToken["Payload"], "exp", 0];
+        If[
+            TrueQ[expiresAt <= currentTime],
+            ThrowErrorWithCleanup[
+                RefreshKeycloakConnection[keycloakObject]
+            ]
+        ];
+        KeycloakExecute[
+            keycloakObject, requestName,
+            FunctionOptions[{opts}, KeycloakExecute]
         ]
     ]
 ]

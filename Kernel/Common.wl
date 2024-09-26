@@ -8,6 +8,7 @@ KeycloakObject
 KeycloakObjectQ
 RefreshKeycloakConnection
 KeycloakExecute
+KeycloakExecuteWithRefresh
 
 (* Connection *)
 OpenKeycloakConnection

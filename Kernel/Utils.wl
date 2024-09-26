@@ -4,6 +4,9 @@ BeginPackage["KeycloakLink`Utils`"]
 mFormatHTTPResponse
 
 
+KeycloakLinkAsset
+
+
 Begin["`Private`"]
 
 
@@ -11,6 +14,9 @@ Needs["KeycloakLink`"]
 Needs["KeycloakLink`Common`"]
 Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
+
+
+KeycloakLinkAsset[srcName_]:= With[{paclet = PacletObject["KeycloakLink"]}, paclet["AssetLocation", srcName]]
 
 
 mFormatHTTPResponse[temp_HTTPResponse]:= FormatHTTPResponse[
