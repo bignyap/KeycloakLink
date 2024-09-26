@@ -49,6 +49,13 @@ $KeycloakServices["DeleteRealm"] = {
     "DynamicPath" -> {"realm"}
 }
 
+$KeycloakServices["UserInfo"] = {
+    "Path" -> {},
+    "Method" -> "GET",
+    "ContentType" -> "application/json",
+    VerifySecurityCertificates -> False 
+}
+
 $KeycloakServices["CreateClient"] = {
     "Path" -> {TemplateSlot["realm"], "clients"},
     "Method" -> "POST",

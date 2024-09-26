@@ -177,7 +177,37 @@ KeycloakExecute[
 
 
 KeycloakExecute[
-   keycloakObject_?KeycloakObjectQ, 
+    keycloakObject_?KeycloakObjectQ, 
+    "UserInfo"
+]:= Catch@Module[{
+        tokenDetails = Lookup[
+            keycloakObject["Information"],
+            "TokenDetails", <||>
+        ],
+        authParams, finalUri
+    },
+    authParams = {
+        "Authorization" -> StringJoin[
+            tokenDetails["token_type"], " ",
+            tokenDetails["access_token"]
+        ]
+    };
+    finalUri = keycloakObject["Information"]["KeyclaokConfig"]["userinfo_endpoint"];
+    KeycloakLink`Utils`mFormatHTTPResponse[
+        SendHTTPRequest[
+            "BaseURL" -> finalUri,
+            Authentication -> <|"Headers" -> authParams|>,
+            FunctionOptions[
+                $KeycloakServices["UserInfo"], 
+                SendHTTPRequest
+            ]
+        ]
+    ]
+]
+
+
+KeycloakExecute[
+    keycloakObject_?KeycloakObjectQ, 
     requestName_String, 
     OptionsPattern[]
 ]:= Catch@Module[{
