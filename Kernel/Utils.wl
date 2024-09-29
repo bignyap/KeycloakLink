@@ -16,85 +16,6 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
-KeycloakLinkAsset[srcName_]:= With[{paclet = PacletObject["KeycloakLink"]}, paclet["AssetLocation", srcName]]
-
-
-mFormatHTTPResponse[temp_HTTPResponse]:= FormatHTTPResponse[
-	temp, "OutputFormat" -> "Association", 
-	"FailureMessage" -> iFailObject[temp]
-]
-
-
-mFormatHTTPResponse[expr_]:= expr
-
-
-iFailObject[temp_HTTPResponse]:= FailObject[
-	temp["StatusCodeDescription"], temp["Body"], 
-	"StatusCode" -> temp["StatusCode"]
-]
-
-
-CacheUserInfo[temp_Association]:= Catch@Module[{
-	  userID, email, folder,
-	  cacheFile
-	},
-	{userID, email} = Lookup[temp, {"userid", "sub"}, Missing[]];
-	email = SelectFirst[{userID, email}, Not[MissingQ[#]]&, Missing[]];
-	If[MissingQ[email], Throw[$Failed]];
-	email = First[StringSplit[email, "@"], Missing[]];
-	If[
-	    MissingQ[email],
-	    Throw[$Failed]
-	];
-	folder = FileNameJoin[{$KeycloakConfig["CacheDirectory"], "cache"}];
-	If[
-	    !DirectoryQ[folder],
-	    CreateDirectory[folder]
-	];
-	cacheFile = FileNameJoin[{folder, email<>".mx"}];
-	Export[cacheFile,
-        <|
-            "Created" -> AbsoluteTime[Now],
-            "UserInfo" -> temp
-        |>, OverwriteTarget -> True
-	]
-]
-
-
-CacheUserInfo[___]:= $Failed
-
-
-GetUserInfoFromCache[parsedToken_Association]:= Catch@Module[{
-	  email, cacheFile,
-	  res
-	},
-	email = Lookup[
-	    Lookup[parsedToken, "Payload", <||>],
-	    "sub", Missing[]
-	];
-	If[
-	    MissingQ[email],
-	    Throw[$Failed]
-	];
-	email = First[StringSplit[email, "@"], Missing[]];
-	If[
-	    MissingQ[email],
-	    Throw[$Failed]
-	];
-	cacheFile = FileNameJoin[{$KeycloakConfig["CacheDirectory"], "cache", email<>".mx"}];
-	If[
-	    !FileExistsQ[cacheFile],
-	    Throw[$Failed]
-	];
-	res = Import[cacheFile];
-	If[
-	    Greater[res["Created"] - AbsoluteTime[Now], 1800],
-	    Throw[$Failed]
-	];
-	res["UserInfo"]
-]
-
-
 $ErrorMessage["ParseJWTToken"]["InvalidToken"]:=
     FailObject["InvalidToken", "Access token is not valid", "StatusCode" -> 403]
 $ErrorMessage["ParseJWTToken"]["UnsupportedAlgorithm"]:= 
@@ -136,11 +57,11 @@ ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
         payload = ImportString[payload, "RawJSON"];
 
 		(* Import the signature *)
-		signature = FromDigits[Normal[ModifiedBase64Decode[signature]]];
+		signature = FromDigits[Normal[ModifiedBase64Decode[signature]], 256];
 
 		(* Verify issuer *)
-		(* issuer = payload["iss"];
-		If[
+		issuer = Lookup[payload, "iss", ""];
+		(* If[
 			!TrueQ[iCheckIssuer[issuer]],
 			Throw[$ErrorMessage["ParseJWTToken"]["InvalidIssuer"]]
 		]; *)
@@ -216,11 +137,7 @@ iGetPublicKey[
 	issuer_String, kid_String
 ]:= Catch[
 	Module[{
-			certUri = URLBuild[{
-				issuer, 
-				$KeyCloakConfig["Path"]["OpenID"],
-				"certs"
-			}],
+			certUri = URLBuild[{issuer, "protocol", "openid-connect","certs"}],
 			response, keys
 		},
 		response = URLRead[certUri, VerifySecurityCertificates -> False];
@@ -247,7 +164,7 @@ iGetPublicKey[
 
 
 iVerifySignature[
-	signatureInput_String, signature_String, 
+	signatureInput_String, signature_Integer, 
 	algorithm_String, publicKey_List
 ]:= Catch@Module[{
 		hash, n, e
@@ -261,12 +178,19 @@ iVerifySignature[
 		Throw[$ErrorMessage["ParseJWTToken"]["UnsupportedAlgorithm"]]
 	];
 
-	hash = Hash[signatureInput, algorithm, "Byte"];
-	{n, e} = publicKey;
+	hash = Hash[signatureInput, algorithm, "ByteArray"];
+	hash = FromDigits[Normal[hash], 256];
+
+	{n, e} = Map[
+		FromDigits[
+			Normal[ModifiedBase64Decode[#]], 
+			256
+		]&, publicKey
+	];
 	
 	SameQ[
 		PowerMod[signature, e, n],
-		FromDigits[hash, 256]
+		hash
 	]
 ]
 
@@ -306,6 +230,24 @@ iBase64URLEncode[str_String]:= StringTrim[fixURLEncode[str], "="]
 
 
 iGenerateCodeChallenge[codeVerifier_String]:= iBase64URLEncode[Hash[codeVerifier, "SHA256", "Base64Encoding"]]
+
+
+KeycloakLinkAsset[srcName_]:= With[{paclet = PacletObject["KeycloakLink"]}, paclet["AssetLocation", srcName]]
+
+
+mFormatHTTPResponse[temp_HTTPResponse]:= FormatHTTPResponse[
+	temp, "OutputFormat" -> "Association", 
+	"FailureMessage" -> iFailObject[temp]
+]
+
+
+mFormatHTTPResponse[expr_]:= expr
+
+
+iFailObject[temp_HTTPResponse]:= FailObject[
+	temp["StatusCodeDescription"], temp["Body"], 
+	"StatusCode" -> temp["StatusCode"]
+]
 
 
 End[]
