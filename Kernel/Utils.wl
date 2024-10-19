@@ -30,11 +30,13 @@ $ErrorMessage["ParseJWTToken"]["InvalidSignature"]:=
 Options[ParseJWTToken] = {
 	"CheckExpiration" :> True,
 	"VerifySignature" :> False,
-	"Issuer" :> ""
+	"Issuer" :> "",
+	"CachePublicKey" -> True,
+	"CacheDuration" -> 3600 (* In Seconds *)
 }
 
 
-ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
+ParseJWTToken[token_String, opts:OptionsPattern[]]:= Catch[
     Module[{
             split, header, payload, signature,
             validQ, signatureInput, publicKey,
@@ -58,11 +60,14 @@ ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
         payload = ImportString[payload, "RawJSON"];
 
 		(* Verify issuer *)
-		issuer = Lookup[payload, "iss", ""];
-		(* If[
-			!TrueQ[iCheckIssuer[issuer]],
+		issuer = Lookup[
+			payload, "iss", 
 			Throw[$ErrorMessage["ParseJWTToken"]["InvalidIssuer"]]
-		]; *)
+		];
+		If[
+			!TrueQ[iCheckIssuer[OptionValue["Issuer"], issuer]],
+			Throw[$ErrorMessage["ParseJWTToken"]["InvalidIssuer"]]
+		];
         
 		(* Check expiration *)
 		validQ = TrueQ[iCheckExpiryQ[payload["exp"]]];
@@ -81,7 +86,10 @@ ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
 
 			(* Import the public key *)
 			kid = header["kid"];
-			publicKey = iGetPublicKey[issuer, kid];
+			publicKey = iGetPublicKey[
+				issuer, kid, 
+				FilterRules[{opts}, Options[iGetPublicKey]]
+			];
 			ThrowErrorWithCleanup[publicKey];
 			{modulus, exponent} = Lookup[publicKey, {"n", "e"}, ""];
 
@@ -125,20 +133,37 @@ iGetSigAlgorithm[alg_String]:= Replace[
 ]
 
 
-iCheckIssuer[issuer_String]:= SameQ[
-	Replace[URLParse[issuer]["Domain"], {"localhost" -> "idp"}],
-	URLParse[$KeyCloakConfig["AuthURL"]]["Domain"]
+iCheckIssuer[actualIssuer_String, foundIssuer_String]:= SameQ[
+	domainWorkaroundForDev[foundIssuer],
+	domainWorkaroundForDev[actualIssuer]
 ]
+
+domainWorkaroundForDev[url_String]:= Replace[URLParse[url]["Domain"], {"localhost" -> "idp"}]
+
+
+Options[iGetPublicKey] = {
+	"CachePublicKey" -> True,
+	"CacheDuration" -> 3600 (* In Seconds *)
+}
 
 
 iGetPublicKey[
-	issuer_String, kid_String
+	issuer_String, kid_String,
+	OptionsPattern[]
 ]:= Catch[
 	Module[{
 			certUri = URLBuild[{issuer, "protocol", "openid-connect","certs"}],
 			response, keys
 		},
-		response = URLRead[certUri, VerifySecurityCertificates -> False];
+		response = If[
+				TrueQ[OptionValue["CachePublicKey"]],
+				Once[
+					URLRead[certUri, VerifySecurityCertificates -> False],
+					PersistenceTime -> OptionValue["CacheDuration"]
+				],
+				Unset[URLRead[certUri, VerifySecurityCertificates -> False]];
+				URLRead[certUri, VerifySecurityCertificates -> False]
+		];
 		ThrowErrorWithCleanup[response];
 		If[
 			response["StatusCode"] != 200,
@@ -148,6 +173,7 @@ iGetPublicKey[
 				"StatusCode" -> 403
 			]
 		];
+
 		keys = FromJSON[response["Body"]];
 		keys = Lookup[
 			keys, "keys",
@@ -252,38 +278,6 @@ iVerifySignature[
 		Normal[hash]
 	]
 ]
-
-
-(* iVerifySignature[
-	signatureInput_String, signature_Integer, 
-	algorithm_String, publicKey_List
-]:= Catch@Module[{
-		hash, n, e
-	},
-
-	If[
-		!MemberQ[
-			{"SHA256", "SHA384", "SHA512"},
-			algorithm
-		],
-		Throw[$ErrorMessage["ParseJWTToken"]["UnsupportedAlgorithm"]]
-	];
-
-	hash = Hash[signatureInput, algorithm, "ByteArray"];
-	hash = FromDigits[Normal[hash], 256];
-
-	{n, e} = Map[
-		FromDigits[
-			Normal[ModifiedBase64Decode[#]], 
-			256
-		]&, publicKey
-	];
-	
-	SameQ[
-		PowerMod[signature, e, n],
-		hash
-	]
-] *)
 
 
 iVerifySignature[___]:= $ErrorMessage["ParseJWTToken"]["InvalidToken"]
