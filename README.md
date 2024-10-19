@@ -75,3 +75,9 @@ Delete a realm:
 ```wolfram
 KeycloakExecuteWithRefresh[conn, "DeleteRealm", "DynamicPath" -> <|"realm" -> "test1234"|>]
 ```
+
+Verify JWT Token:
+
+```wolfram
+KeycloakLink`Common`ParseJWTToken[conn["TokenDetails"]["access_token"], "VerifySignature" -> True, "Issuer" -> "https://localhost"]
+```
