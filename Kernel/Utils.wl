@@ -38,7 +38,8 @@ ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
     Module[{
             split, header, payload, signature,
             validQ, signatureInput, publicKey,
-			algorithm, issuer, kid, validSignatureQ
+			algorithm, issuer, kid, validSignatureQ,
+			modulus, exponent
         },
 		(* Token needs to have 3 parts *)
         split = StringSplit[token, "."];
@@ -55,9 +56,6 @@ ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
 		(* Import the payload *)
 		payload = ImportString[iPaddedString[payload], {"Base64", "String"}];
         payload = ImportString[payload, "RawJSON"];
-
-		(* Import the signature *)
-		signature = FromDigits[Normal[ModifiedBase64Decode[signature]], 256];
 
 		(* Verify issuer *)
 		issuer = Lookup[payload, "iss", ""];
@@ -85,14 +83,14 @@ ParseJWTToken[token_String, OptionsPattern[]]:= Catch[
 			kid = header["kid"];
 			publicKey = iGetPublicKey[issuer, kid];
 			ThrowErrorWithCleanup[publicKey];
-			publicKey = Lookup[publicKey, {"n", "e"}, ""];
+			{modulus, exponent} = Lookup[publicKey, {"n", "e"}, ""];
 
 			(* check the signature *)
 			signatureInput = StringJoin[split[[1]], ".", split[[2]]];
 			algorithm = iGetSigAlgorithm[header["alg"]];
 			validSignatureQ = iVerifySignature[
 				signatureInput, signature, 
-				algorithm, publicKey
+				algorithm, modulus, exponent
 			];
 			ThrowErrorWithCleanup[validSignatureQ];
             If[
@@ -163,7 +161,100 @@ iGetPublicKey[
 ]
 
 
+(*
+	Unfortunately, WL doesn't have built-in support for custom verification 
+	with separate modulus and exponent without using certificates. 
+	We'll need to manually perform the RSA signature verification process using lower-level functions.
+	
+	Steps to verify the signature:
+
+	1. Hash the header and payload using SHA-256.
+	2. Decrypt the signature using the RSA public key (derived from n and e)
+	3. Compare the decrypted result with the hash of the header and payload.
+
+	Read the official doc here: https://datatracker.ietf.org/doc/html/rfc7519#section-7.2
+	Read the JWS signature validation doc here: https://datatracker.ietf.org/doc/html/rfc7515#section-5.2
+*)
+
+
 iVerifySignature[
+	signatureInput_String, signature_String, 
+	algorithm_String, modulus_String, exponent_String
+]:= Catch@Module[{
+		hash, rsaModulus, rsaExponent,
+		decodedSignature, decryptedSignature,
+		publicKeySize, signatureInteger,
+		decryptedSignatureBytes
+	},
+	(*
+		Verify if the the specified algorithm is supported.
+	*)
+	If[
+		!MemberQ[
+			{"SHA256", "SHA384", "SHA512"},
+			algorithm
+		],
+		Throw[$ErrorMessage["ParseJWTToken"]["UnsupportedAlgorithm"]]
+	];
+
+	(* 
+		Step 1: Decoding the Signature
+		i. Decode the signature
+		ii. Convert it to large integers (binary forms)
+	*)
+	decodedSignature = ModifiedBase64Decode[signature];
+	signatureInteger = FromDigits[ImportByteArray[decodedSignature], 256];
+
+	(* 
+		Step 2: Extracting the Public Key or Exponent/Modulus
+		i. Decode the modulus and convert it integer form
+		ii. Decode the exponent and convert it integer form
+	*)
+	rsaModulus = FromDigits[ImportByteArray[ModifiedBase64Decode[modulus]], 256];
+	rsaExponent = FromDigits[ImportByteArray[ModifiedBase64Decode[exponent]], 256];
+
+	(*
+		Step 3: Compute the public key size
+		i.  rsaModulus is a large integer, the logarithm base 2 of the modulus gives the bit length
+		ii. Divide by 8 converts it to bytes
+	*)
+	publicKeySize = Ceiling[Log[2, rsaModulus]] / 8;
+
+	(*
+		Step 4: Hashing the Input
+	*)
+	hash = Hash[signatureInput, algorithm, "ByteArray"];
+
+	(*
+		Step 5: Decrypting the Signature
+		i. The RSA decryption is performed using modular exponentiation (PowerMod) 
+		of the signatureInteger (the signature as an integer), 
+		raised to the rsaExponent (the public key exponent), 
+		modulo rsaModulus (the public key modulus).
+	*)
+	decryptedSignature = PowerMod[signatureInteger, rsaExponent, rsaModulus];
+
+	(*
+		Step 5: Converting Decrypted Signature
+		The decrypted signature (which is an integer) is converted back into its byte array form, 
+		since the result of RSA decryption is essentially the padded hash of the original message.
+	*)
+	decryptedSignatureBytes = IntegerDigits[decryptedSignature, 256, publicKeySize];
+	
+	(* 
+		Stpe 6 : Signature Validation 
+		The function compares the decrypted signature bytes with the computed hash of the original message. 
+		The Take function extracts the relevant portion of the decrypted signature, 
+		which should match the original hash if the signature is valid.
+	*)
+	TrueQ@SameQ[
+		Take[decryptedSignatureBytes, -Length[hash]],
+		Normal[hash]
+	]
+]
+
+
+(* iVerifySignature[
 	signatureInput_String, signature_Integer, 
 	algorithm_String, publicKey_List
 ]:= Catch@Module[{
@@ -192,7 +283,7 @@ iVerifySignature[
 		PowerMod[signature, e, n],
 		hash
 	]
-]
+] *)
 
 
 iVerifySignature[___]:= $ErrorMessage["ParseJWTToken"]["InvalidToken"]
