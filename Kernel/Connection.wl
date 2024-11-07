@@ -11,6 +11,15 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
+SetUsage[OpenKeycloakConnection, StringJoin[
+    "OpenKeycloakConnection[hostUri, realm, opts] opens a connection to a Keycloak server at the specified hostUri and realm with the given options opts.",
+    "\nOptions include:",
+    "\n| Option | Default | Description |",
+    "\n| Authentication | Automatic | The authentication method to use |",
+    "\n| 'Name' | CreateUUID[] | A unique identifier for the connection |"
+]]
+
+
 $ErrorMessage["OpenKeycloakConnection"]["HostUnreachable"]:=
     FailObject["HostUnreachable", "Could not reach the host", "StatusCode" -> 400]
 
@@ -58,6 +67,11 @@ OpenKeycloakConnection[
         keycloakObject
     ]
 ]
+
+
+SetUsage[GetKeyclaokConfiguration, StringJoin[
+    "GetKeyclaokConfiguration[hostUrl, realm] retrieves the Keycloak configuration for the specified hostUrl and realm."
+]]
 
 
 GetKeyclaokConfiguration[

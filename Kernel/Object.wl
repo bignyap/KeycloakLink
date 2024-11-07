@@ -13,7 +13,9 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
-KeycloakObject::usage = ""
+SetUsage[KeycloakObject, StringJoin[
+    "KeycloakObject[assoc] represents a Keycloak object with the specified association assoc."
+]]
 
 
 KeycloakObject/:MakeBoxes[p:KeycloakObject[keycloakAssoc_?KeycloakObjectQ], fmt:(StandardForm|TraditionalForm)]:=
@@ -98,6 +100,11 @@ KeycloakObject/:KeycloakObject[keycloakAssoc_?AssociationQ]["TokenDetails"]:=
     keycloakAssoc["Information"]["TokenDetails"]
 
 
+SetUsage[KeycloakObjectQ, StringJoin[
+    "KeycloakObjectQ[obj] returns True if obj is a valid KeycloakObject, and False otherwise."
+]]
+
+
 KeycloakObjectQ[
     KeycloakObject[keycloakAssoc_?AssociationQ]
 ]:= KeycloakObjectQ[keycloakAssoc]
@@ -111,6 +118,11 @@ KeycloakObjectQ[___]:= False
 
 
 KeycloakObject/:Normal[KeycloakObject[keycloakAssoc_?AssociationQ]]:= keycloakAssoc
+
+
+SetUsage[RefreshKeycloakConnection, StringJoin[
+    "RefreshKeycloakConnection[obj] refreshes the Keycloak connection for the specified KeycloakObject obj."
+]]
 
 
 SetAttributes[RefreshKeycloakConnection, HoldAll]
@@ -152,6 +164,16 @@ $ErrorMessage["KeycloakExecute"]["AdditionalPathRequired", params_]:=
         ],
         "StatusCode" -> 400
     ]
+
+
+SetUsage[KeycloakExecute, StringJoin[
+    "KeycloakExecute[keycloakObject, requestName, opts] executes a request on the Keycloak server using the specified KeycloakObject keycloakObject and request name requestName with options opts.",
+    "\nOptions include:",
+    "\n| Option | Default | Description |",
+    "\n| 'Body' | None | The body of the request |",
+    "\n| 'Query' | {} | Query parameters for the request |",
+    "\n| 'DynamicPath' | <||> | Dynamic path parameters for the request |"
+]]
 
 
 Options[KeycloakExecute] = {
@@ -268,6 +290,12 @@ KeycloakExecute[
         ]
     ]
 ]
+
+
+SetUsage[KeycloakExecuteWithRefresh, StringJoin[
+    "KeycloakExecuteWithRefresh[keycloakObject, requestName, opts] executes a request on the Keycloak server with automatic token refresh using the specified KeycloakObject keycloakObject and request name requestName with options opts.",
+    "\nOptions are the same as for KeycloakExecute."
+]]
 
 
 SetAttributes[KeycloakExecuteWithRefresh, HoldFirst]

@@ -8,6 +8,11 @@ Needs["KeycloakLink`"]
 Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
+
+SetUsage[$KeycloakServices, StringJoin[
+    "$KeycloakServices is an association that defines various Keycloak service endpoints and their configurations."
+]]
+
 $KeycloakServices = <||>
 
 $KeycloakServices["Token"] = {

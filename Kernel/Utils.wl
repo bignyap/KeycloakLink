@@ -16,6 +16,18 @@ Needs["WTC`Utilities`"]
 Needs["WTC`Utilities`Common`"]
 
 
+SetUsage[ParseJWTToken, StringJoin[
+    "ParseJWTToken[token, opts] parses a JSON Web Token (JWT) and verifies its validity using the specified options opts.",
+    "\nOptions include:",
+    "\n| Option | Default | Description |",
+    "\n| 'CheckExpiration' | True | Whether to check the token's expiration |",
+    "\n| 'VerifySignature' | False | Whether to verify the token's signature |",
+    "\n| 'Issuer' | '' | The expected issuer of the token |",
+    "\n| 'CachePublicKey' | True | Whether to cache the public key |",
+    "\n| 'CacheDuration' | 3600 | Duration to cache the public key in seconds |"
+]]
+
+
 $ErrorMessage["ParseJWTToken"]["InvalidToken"]:=
     FailObject["InvalidToken", "Access token is not valid", "StatusCode" -> 403]
 $ErrorMessage["ParseJWTToken"]["UnsupportedAlgorithm"]:= 
@@ -118,6 +130,11 @@ ParseJWTToken[token_String, opts:OptionsPattern[]]:= Catch[
 
 
 ParseJWTToken[___]:= $ErrorMessage["ParseJWTToken"]["InvalidToken"]
+
+
+SetUsage[ModifiedBase64Decode, StringJoin[
+    "ModifiedBase64Decode[str] decodes a Base64 URL-encoded string str."
+]]
 
 
 ModifiedBase64Decode[str_String]:= 

@@ -20,6 +20,18 @@ Needs["WTC`Utilities`Common`"]
 (*Get JWT*)
 
 
+SetUsage[GetJWTFromKeycloak, StringJoin[
+    "GetJWTFromKeycloak[opts] retrieves a JSON Web Token (JWT) from Keycloak using the specified options opts.",
+    "\nOptions include:",
+    "\n| Option | Default | Description |",
+    "\n| 'token_url' | None | The URL to request the token from |",
+    "\n| 'grant_type' | None | The grant type to use for authentication |",
+    "\n| 'auth_details' | None | Authentication details required for the grant type |",
+    "\n| 'realm' | None | The realm to authenticate against |",
+    "\n| 'scope' | None | The scope of the token |"
+]]
+
+
 $ErrorMessage["GetJWTFromKeycloak"]["RealmMissing"]:=
 	FailObject["RealmMissing", "Realm missing", "StatusCode" -> 400]
 	
@@ -164,6 +176,12 @@ iVerifyAuthKeys[___]:= $ErrorMessage["GetJWTFromKeycloak"]["GrantTypeNotSupporte
 
 (* ::Subsubsection:: *)
 (*Verify JWT Token In Header*)
+
+
+SetUsage[VerifyJWTTokenInHeader, StringJoin[
+    "VerifyJWTTokenInHeader[] verifies the JWT token present in the HTTP request headers.",
+    "\nVerifyJWTTokenInHeader[header] verifies the JWT token in the specified header."
+]]
 
 
 VerifyJWTTokenInHeader[]:= VerifyJWTTokenInHeader[HTTPRequestData["Headers"]]
